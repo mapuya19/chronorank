@@ -18,19 +18,20 @@ ChronoRank is a daily history trivia game. Players drag 5 historical events into
 
 | File | Purpose |
 |------|---------|
-| `src/lib/seed.ts` | **Critical.** mulberry32 PRNG, `getDailyEvents(events)`, `getPracticeEventsBySeed(events, seed)`. Deterministic puzzle generation -- changing this breaks puzzle parity across players. |
-| `src/lib/score.ts` | `scoreGuess()` compares player ordering to correct chronological order. Generates emoji grid and share text. |
-| `src/lib/streak.ts` | `useStreak()` React hook. Reads/writes `StreakData` to localStorage. Tracks wins, current streak, best streak, last played date (`YYYYMMDD` string). |
+| `src/lib/seed.ts` | **Critical.** mulberry32 PRNG, daily/practice event selection, timezone-aware date handling (US Eastern). Exports: `dateSeed()`, `dateKey()`, `yesterdayKey()`, `msUntilPuzzleMidnight()`, `getDailyEvents()`, `getPracticeEventsBySeed()`, `getPracticeEvents()`, `getCorrectOrder()`. |
+| `src/lib/score.ts` | Positional scoring, emoji grid generation, share text builder. Exports: `MAX_ATTEMPTS` (4), `scoreGuess()`, `buildShareText()`. |
+| `src/lib/streak.ts` | Streak persistence via localStorage. Exports: `loadStreak()`, `saveStreak()`, `recordGame(score)`. Constants: `WIN_THRESHOLD` (4 — minimum score for a "win"), `STREAK_KEY` ("chronorank_streak"). |
 | `src/data/events.json` | Array of `HistoricalEvent` objects. Imported at build time. Currently 50+ events, expandable to 1,000 via the generation script. |
 
 ### Components
 
 | Component | Role |
 |-----------|------|
-| `App.tsx` | Top-level state: daily vs practice mode, date computation, `?seed=` URL param parsing. Renders `GameBoard` or `ResultPanel`. |
-| `GameBoard.tsx` | dnd-kit `DndContext` + `SortableContext`. Uses `arrayMove` on drag end. Manages a single vertical list (do NOT split into two lists -- this caused a critical 5th-card duplication bug). Submit button locked until at least one drag move. |
-| `EventCard.tsx` | Individual draggable card. Shows category pill, difficulty badge, position number. On reveal: CSS flip animation, year display, green/red coloring. Drag listeners attached to handle div only, not the whole card. |
-| `ResultPanel.tsx` | Post-submit view. Animated score bar, emoji grid, ranked event list with years, streak stats, "Copy Result" clipboard button. |
+| `App.tsx` | Top-level state: daily vs practice mode, date computation, `?seed=` URL param parsing, auto-reload on midnight ET. Renders `GameBoard` or `ResultPanel`. Manages `GameProgress` persistence to localStorage for both daily and practice modes. |
+| `GameBoard.tsx` | dnd-kit `DndContext` + `SortableContext`. Uses `arrayMove` on drag end. Manages a single vertical list (do NOT split into two lists -- this caused a critical 5th-card duplication bug). 4-attempt system with review state between attempts. Submit button locked until at least one drag move. Countdown timer to next daily puzzle. |
+| `EventCard.tsx` | Individual draggable card. Shows category pill, difficulty badge, position number. On reveal: CSS flip animation, year display (gated by `showYear` prop), green/red coloring. Drag listeners attached to handle div only, not the whole card. |
+| `ResultPanel.tsx` | Post-submit view. Animated score bar, stacked emoji grid (all attempts), ranked event list with years, streak stats, unified "Copy Result" clipboard button with Wordle-style share text. Conditional "solved" text (only shown on wins). |
+| `Countdown.tsx` | Inline countdown to next daily puzzle (midnight ET). Used inside `GameBoard`. |
 | `CategoryFilter.tsx` | Stub for stretch goal (category filter mode). |
 | `Timer.tsx` | Stub for stretch goal (timed mode). |
 
@@ -51,14 +52,16 @@ interface HistoricalEvent {
 interface ScoreResult {
   results: boolean[];  // per-position correctness
   score: number;       // count of correct positions (0-5)
-  emoji: string;       // emoji grid string
+  emoji: string;       // emoji grid string for this attempt
+  attempts: string[];  // all emoji rows from each attempt (length = attemptsUsed)
+  attemptsUsed: number; // how many attempts the player used (1-4)
 }
 
 interface StreakData {
   wins: number;
   currentStreak: number;
   bestStreak: number;
-  lastPlayedDate: string; // YYYYMMDD
+  lastPlayedDate: string; // YYYY-MM-DD (ET timezone)
 }
 ```
 
@@ -90,6 +93,9 @@ When adding events manually, ensure:
 - **Single-list drag architecture in GameBoard.tsx.** A previous two-list design (unranked + ranked) caused a stale-closure bug where dragging the 5th card duplicated entries. The fix was reverting to a single `SortableContext` with `arrayMove`. Do not reintroduce a two-list pattern.
 - **Daily seed formula in `seed.ts`.** The PRNG seed is derived from `YYYYMMDD` as an integer (e.g., `20260313`). Changing this formula means different players see different puzzles for the same day.
 - **Drag listeners on handle only.** In `EventCard.tsx`, `{...listeners}` is spread on the drag handle div, not the outer card. This prevents accidental drags on mobile when scrolling.
+- **Timezone: US Eastern for all puzzle boundaries.** All date/seed/key functions in `seed.ts` use `Intl.DateTimeFormat` with `timeZone: "America/New_York"`. This ensures puzzle rollover at midnight ET and consistent keys across timezones. Do not switch to UTC or local time.
+- **4-attempt system with review state.** Between attempts, cards show green/red coloring but years stay hidden (`showYear={false}` in the review state). Years are only revealed after all 4 attempts are spent or 5/5 is achieved. Do not reveal years between attempts — it allows cheating by memorization.
+- **`GameBoard` returns `null` when `submitted === true`.** This prevents stale card order display. The `ResultPanel` handles the completed state with correct order and years.
 
 ### Mobile-specific fixes (do not revert)
 
@@ -143,3 +149,28 @@ Static site on Vercel. `vercel.json` configures:
 - SPA rewrite: all routes to `index.html`
 
 No server, no SSR, no edge functions. The entire app is a static bundle.
+
+## State persistence
+
+### localStorage keys
+
+| Key | Purpose |
+|-----|---------|
+| `chronorank_played_YYYY-MM-DD` | Flag: daily puzzle completed for this date |
+| `chronorank_result_YYYY-MM-DD` | Full `{ result: ScoreResult, answer: HistoricalEvent[] }` for daily |
+| `chronorank_progress_YYYY-MM-DD` | Mid-game `{ attempt: number, previousAttempts: string[] }` for daily |
+| `chronorank_practice_progress_<seed>` | Mid-game progress for practice seed |
+| `chronorank_practice_result_<seed>` | Completed result for practice seed |
+| `chronorank_streak` | `StreakData` object (wins, streaks, last played date) |
+
+### Persistence flow
+
+1. On page load, `App` checks `chronorank_played_YYYY-MM-DD` — if set, loads saved result and shows `ResultPanel`.
+2. If not played, loads `chronorank_progress_YYYY-MM-DD` to restore mid-game attempt state.
+3. `GameBoard` calls `onAttemptUsed(attempt, previousAttempts)` after each non-final attempt — `App` persists this to the progress key.
+4. On final submit, `App` writes result to the result key, sets the played flag, and removes the progress key.
+5. Practice mode uses the same pattern with seed-keyed localStorage entries.
+
+## Auto-reload
+
+`App` runs a `useEffect` that checks `dateKey()` every 30 seconds. When the current date key differs from the initial `todayKey` (i.e., midnight ET has passed), the page calls `window.location.reload()`. This ensures players never see a stale puzzle or store results under the wrong date.

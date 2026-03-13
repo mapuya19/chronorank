@@ -6,16 +6,33 @@ A daily history trivia game where you drag historical events into chronological 
 
 ## How it works
 
-Each day, 5 historical events are drawn from the pool (2 easy, 2 medium, 1 hard) using a deterministic PRNG seeded by the date. Players drag the shuffled cards into chronological order and submit. Correct positions light up green, wrong ones red. Share your score as an emoji grid.
+Each day, 5 historical events are drawn from the pool (2 easy, 2 medium, 1 hard) using a deterministic PRNG seeded by the date. Players drag the shuffled cards into chronological order and submit. Correct positions light up green, wrong ones red.
+
+You get **4 attempts** per puzzle. Between attempts you see which cards are right/wrong, but years stay hidden until you finish -- no memorizing answers. Share your score as an emoji grid when you're done.
 
 ### Features
 
-- **Daily puzzle** -- same 5 events for every player, resets at midnight
-- **Practice mode** -- append `?seed=42` (any integer) to the URL for shareable non-daily puzzles
+- **Daily puzzle** -- same 5 events for every player, resets at midnight ET
+- **4 attempts** -- review green/red feedback between tries, years revealed only at the end
+- **Practice mode** -- random puzzles with shareable seed URLs (`?seed=42`)
+- **Progress persistence** -- mid-game state saved to localStorage; refreshing won't give extra attempts
 - **Drag-and-drop** -- reorder cards with mouse or touch; drag handle prevents accidental drags on mobile
-- **Score sharing** -- copy an emoji grid to clipboard (works on iOS too)
+- **Score sharing** -- Wordle-style emoji grid copied to clipboard (works on iOS too)
 - **Streak tracking** -- wins, current streak, and best streak persisted in localStorage
+- **Auto-reload** -- page refreshes automatically when the daily puzzle rolls over at midnight ET
 - **Zero API calls at runtime** -- all events are bundled at build time
+
+### Share format
+
+```
+ChronoRank
+2026-03-13 2/4
+🟩🟩🟥🟩🟩
+🟩🟩🟩🟩🟩
+https://chronorank.vercel.app
+```
+
+Failed puzzles show `X/4` instead of the attempt number. Practice shares include the seed link.
 
 ## Tech stack
 
@@ -73,21 +90,21 @@ npx vercel --prod
 ```
 chronorank/
 ├── src/
-│   ├── App.tsx                  # Game state, daily vs practice mode
+│   ├── App.tsx                  # Game state, daily vs practice mode, auto-reload
 │   ├── types.ts                 # HistoricalEvent, ScoreResult, StreakData
 │   ├── index.css                # Tailwind imports, theme tokens, animations
 │   ├── components/
-│   │   ├── GameBoard.tsx        # dnd-kit SortableContext, drag sensors
+│   │   ├── GameBoard.tsx        # dnd-kit SortableContext, 4-attempt system, countdown
 │   │   ├── EventCard.tsx        # Draggable card with flip reveal animation
-│   │   ├── ResultPanel.tsx      # Score bar, emoji grid, streak display
+│   │   ├── ResultPanel.tsx      # Score bar, emoji grid, streak display, share buttons
 │   │   ├── CategoryFilter.tsx   # (stub -- stretch goal)
 │   │   └── Timer.tsx            # (stub -- stretch goal)
 │   ├── data/
 │   │   └── events.json          # Event pool (50--1000 events)
 │   └── lib/
-│       ├── seed.ts              # mulberry32 PRNG, daily/practice event selection
-│       ├── score.ts             # Positional scoring, emoji generation
-│       └── streak.ts            # localStorage streak persistence
+│       ├── seed.ts              # mulberry32 PRNG, daily/practice selection, ET timezone
+│       ├── score.ts             # Positional scoring, emoji generation, MAX_ATTEMPTS
+│       └── streak.ts            # localStorage streak persistence, WIN_THRESHOLD
 ├── scripts/
 │   └── generate-events.ts       # Groq batch generation script
 ├── vercel.json                  # Static deployment config

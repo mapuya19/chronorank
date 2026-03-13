@@ -15,7 +15,7 @@ export interface ScoreResult {
   emoji: string;
   /** All emoji rows from each attempt (length = attemptsUsed) */
   attempts: string[];
-  /** How many attempts the player used (1-3) */
+  /** How many attempts the player used (1-4) */
   attemptsUsed: number;
 }
 
