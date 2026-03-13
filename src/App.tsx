@@ -249,28 +249,11 @@ export default function App() {
   const activeResult = practiceMode ? practiceResult : result;
   const activeAnswer = practiceMode ? practiceAnswer : answer;
 
-  const isEmbeddedBrowser = /FBAN|FBAV|FB_IAB|Instagram|LinkedInApp|Twitter|Line\/|Musical|TikTok|Snapchat|Pinterest/i.test(navigator.userAgent);
-
   return (
     <div
       className="min-h-screen min-h-dvh flex flex-col"
       style={{ backgroundColor: "var(--color-bg)" }}
     >
-      {/* Embedded browser warning */}
-      {isEmbeddedBrowser && (
-        <div className="bg-[#c8a84b] text-[#0a0a0f] px-4 py-3 text-center text-sm font-semibold">
-          Dragging doesn't work in Messenger.{" "}
-          <a
-            href={window.location.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline font-bold"
-          >
-            Open in browser
-          </a>
-          {" "}or tap ··· → Open in Safari.
-        </div>
-      )}
       {/* Header */}
       <header className="border-b border-[#1e1e35] py-3 px-4">
         <div className="max-w-xl mx-auto">
