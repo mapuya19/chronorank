@@ -100,7 +100,8 @@ When adding events manually, ensure:
 ### Mobile-specific fixes (do not revert)
 
 - `body.dragging { position: fixed; overflow: hidden }` applied only on touch devices via `@media (hover: none) and (pointer: coarse)` in `index.css`. Prevents iOS scroll-to-top during drag.
-- `-webkit-touch-callout: none` on `[data-draggable]` elements. Prevents iOS long-press context menu.
+- `touch-action: none` is on `[data-draggable]` (the drag handle only), NOT on `[data-drag-card]` (the card root). This lets users scroll by touching the card body; drag only activates from the handle. Do not add `touch-action: none` back to the card root.
+- `-webkit-touch-callout: none` and `-webkit-user-select: none` on `[data-drag-card]` (card root). Prevents iOS long-press context menu and text selection without blocking scroll.
 - `dvh` viewport unit with `100vh` fallback. Older Android WebViews don't support `dvh`.
 - Clipboard fallback in `ResultPanel.tsx` uses a visible textarea with `font-size: 16px` to prevent iOS zoom on focus.
 

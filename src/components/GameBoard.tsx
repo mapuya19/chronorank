@@ -55,6 +55,9 @@ function getTimeUntilMidnight(): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+// Stable reference outside the component so add/removeEventListener match.
+function preventScroll(e: TouchEvent) { e.preventDefault(); }
+
 // ─── Sortable card wrapper ────────────────────────────────────────────────────
 
 function SortableCard({
@@ -146,7 +149,7 @@ export function GameBoard({
       activationConstraint: { distance: 5 },
     }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 8 },
+      activationConstraint: { delay: 150, tolerance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -159,11 +162,15 @@ export function GameBoard({
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id));
     document.body.classList.add("dragging");
+    // Prevent page scroll during drag on iOS without using position:fixed
+    // (which resets scroll position and causes the overlay to jump).
+    document.addEventListener("touchmove", preventScroll, { passive: false });
   }
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveId(null);
     document.body.classList.remove("dragging");
+    document.removeEventListener("touchmove", preventScroll);
 
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -181,6 +188,7 @@ export function GameBoard({
   function handleDragCancel() {
     setActiveId(null);
     document.body.classList.remove("dragging");
+    document.removeEventListener("touchmove", preventScroll);
   }
 
   function handleSubmit() {

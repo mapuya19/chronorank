@@ -72,7 +72,7 @@ export function EventCard({
     <div
       // Spread dnd attributes onto the card so keyboard nav + aria work
       {...(attributes ?? {})}
-      data-draggable={isDraggable || undefined}
+      data-drag-card={isDraggable || undefined}
       className={[
         "relative flex items-start gap-3 rounded-xl border px-4 py-2.5",
         "select-none",

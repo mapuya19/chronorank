@@ -76,33 +76,28 @@ body {
   min-height: 100dvh;
 }
 
-/* Lock body scroll while a drag is active — touch devices only.
-   position:fixed would reset scroll position on desktop, so we
-   only apply it when the primary input is touch (no hover). */
-@media (hover: none) and (pointer: coarse) {
-  body.dragging {
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-  }
-}
-
-/* On desktop, a lighter lock is enough — just prevent overscroll */
-@media (hover: hover) and (pointer: fine) {
-  body.dragging {
-    overflow: hidden;
-  }
+/* Lock body scroll while a drag is active on all devices. Avoid
+   position:fixed entirely — it resets scroll position and causes
+   dnd-kit's drag overlay to jump. Scroll is blocked via a
+   touchmove preventDefault listener added in GameBoard instead. */
+body.dragging {
+  overflow: hidden;
 }
 
 /* ── Draggable elements ───────────────────────────────────────────────────── */
 
-/* All draggable cards must block browser touch handling so dnd-kit
-   gets the events before iOS/Android scroll does. */
+/* Drag handle: block touch so dnd-kit gets events before the browser
+   scroll handler. Only applied to the handle grip, NOT the card body,
+   so the card body remains freely scrollable on mobile. */
 [data-draggable] {
   touch-action: none;
+}
+
+/* Card body: prevent text selection and iOS long-press callout without
+   blocking scroll (touch-action intentionally omitted here). */
+[data-drag-card] {
   -webkit-user-select: none;
   user-select: none;
-  /* Prevent iOS callout (long-press context menu) on drag */
   -webkit-touch-callout: none;
 }
 
