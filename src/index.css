@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-bg: #0a0a0f;
+  --color-surface: #12121e;
+  --color-card: #1a1a2e;
+  --color-card-hover: #1f1f3a;
+  --color-border: #2a2a45;
+  --color-border-subtle: #1e1e35;
+
+  --color-gold: #c8a84b;
+  --color-gold-dim: #9a7d35;
+  --color-gold-glow: rgba(200, 168, 75, 0.15);
+
+  --color-text-primary: #e8e8f0;
+  --color-text-secondary: #8888aa;
+  --color-text-muted: #555570;
+
+  --color-politics: #4a6fa5;
+  --color-politics-bg: rgba(74, 111, 165, 0.18);
+  --color-politics-border: rgba(74, 111, 165, 0.4);
+
+  --color-culture: #7b5ea7;
+  --color-culture-bg: rgba(123, 94, 167, 0.18);
+  --color-culture-border: rgba(123, 94, 167, 0.4);
+
+  --color-tech: #4a8c6f;
+  --color-tech-bg: rgba(74, 140, 111, 0.18);
+  --color-tech-border: rgba(74, 140, 111, 0.4);
+
+  --color-correct: #2d6a4f;
+  --color-correct-bg: rgba(45, 106, 79, 0.25);
+  --color-correct-border: rgba(45, 106, 79, 0.6);
+  --color-correct-text: #74c69d;
+
+  --color-wrong: #6b2d2d;
+  --color-wrong-bg: rgba(107, 45, 45, 0.25);
+  --color-wrong-border: rgba(107, 45, 45, 0.6);
+  --color-wrong-text: #e07070;
+
+  /* Fonts */
+  --font-family-heading: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-family-mono: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+  --font-family-body: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent font size inflation on orientation change (iOS) */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  /* dvh with min-height:100vh fallback for older Android WebViews */
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* Prevent rubber-band scroll from fighting drag gestures */
+  overscroll-behavior: none;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Lock body scroll while a drag is active — touch devices only.
+   position:fixed would reset scroll position on desktop, so we
+   only apply it when the primary input is touch (no hover). */
+@media (hover: none) and (pointer: coarse) {
+  body.dragging {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+}
+
+/* On desktop, a lighter lock is enough — just prevent overscroll */
+@media (hover: hover) and (pointer: fine) {
+  body.dragging {
+    overflow: hidden;
+  }
+}
+
+/* ── Draggable elements ───────────────────────────────────────────────────── */
+
+/* All draggable cards must block browser touch handling so dnd-kit
+   gets the events before iOS/Android scroll does. */
+[data-draggable] {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent iOS callout (long-press context menu) on drag */
+  -webkit-touch-callout: none;
+}
+
+/* Score bar animation */
+@keyframes growBar {
+  from { width: 0%; }
+  to { width: var(--bar-target-width); }
+}
+
+.score-bar-fill {
+  animation: growBar 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: 0.3s;
+  width: 0%;
+}
+
+/* Reveal animation */
+@keyframes revealFlip {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(0.05); }
+  100% { transform: scaleY(1); }
+}
+
+.card-reveal {
+  animation: revealFlip 0.4s ease-in-out forwards;
+}
+
+/* Result panel entrance */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-entrance {
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbar styling (desktop only — hidden on mobile) */
+@media (hover: hover) {
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+  }
+}
