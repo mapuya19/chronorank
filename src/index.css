@@ -29,6 +29,10 @@
   --color-tech-bg: rgba(74, 140, 111, 0.18);
   --color-tech-border: rgba(74, 140, 111, 0.4);
 
+  --color-popculture: #d946ef;
+  --color-popculture-bg: rgba(217, 70, 239, 0.18);
+  --color-popculture-border: rgba(217, 70, 239, 0.4);
+
   --color-correct: #2d6a4f;
   --color-correct-bg: rgba(45, 106, 79, 0.25);
   --color-correct-border: rgba(45, 106, 79, 0.6);

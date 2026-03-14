@@ -25,6 +25,10 @@ const CATEGORY_STYLES: Record<Category, { pill: string; label: string }> = {
     pill: "bg-[rgba(123,94,167,0.18)] border border-[rgba(123,94,167,0.4)] text-[#b08ee0]",
     label: "Culture",
   },
+  popculture: {
+    pill: "bg-[rgba(217,70,239,0.18)] border border-[rgba(217,70,239,0.4)] text-[#e879f9]",
+    label: "Pop Culture",
+  },
   tech: {
     pill: "bg-[rgba(74,140,111,0.18)] border border-[rgba(74,140,111,0.4)] text-[#7cc4a0]",
     label: "Tech & Science",

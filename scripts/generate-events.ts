@@ -32,7 +32,7 @@ interface HistoricalEvent {
   id: string;
   text: string;
   year: number;
-  category: "politics" | "culture" | "tech";
+  category: "politics" | "culture" | "popculture" | "tech";
   difficulty: "easy" | "medium" | "hard";
 }
 
@@ -78,7 +78,7 @@ function generateId(
   category: HistoricalEvent["category"],
   index: number
 ): string {
-  const prefix = { politics: "pol", culture: "cul", tech: "tech" }[category];
+  const prefix = { politics: "pol", culture: "cul", popculture: "pop", tech: "tech" }[category];
   return `${prefix}-${String(index).padStart(3, "0")}`;
 }
 
@@ -87,7 +87,7 @@ function assignIds(
   existing: HistoricalEvent[]
 ): HistoricalEvent[] {
   // Find max id per category prefix
-  const maxByPrefix: Record<string, number> = { pol: 0, cul: 0, tech: 0 };
+  const maxByPrefix: Record<string, number> = { pol: 0, cul: 0, pop: 0, tech: 0 };
   for (const e of existing) {
     const [prefix, numStr] = e.id.split("-");
     const num = parseInt(numStr, 10);
@@ -97,7 +97,7 @@ function assignIds(
   }
 
   return events.map((e) => {
-    const prefix = { politics: "pol", culture: "cul", tech: "tech" }[
+    const prefix = { politics: "pol", culture: "cul", popculture: "pop", tech: "tech" }[
       e.category
     ];
     maxByPrefix[prefix]++;
@@ -123,40 +123,77 @@ Generate exactly ${batchSize} historical events as a JSON array. Each event must
   "id": "",
   "text": "string — one clear sentence describing the event",
   "year": number,
-  "category": "politics" | "culture" | "tech",
+  "category": "politics" | "culture" | "popculture" | "tech",
   "difficulty": "easy" | "medium" | "hard"
 }
 
 Rules:
-1. Years must be between 1960 and 2023 (inclusive). NO events outside this range.
+1. Years must be between 1900 and 2026 (inclusive). NO events outside this range.
 2. EVERY year should appear at most twice in the batch — spread across the decades.
-3. Decade distribution (approximate): 1960s: 8, 1970s: 8, 1980s: 8, 1990s: 9, 2000s: 8, 2010s: 9.
-4. Category distribution: ~17 politics, ~17 culture, ~16 tech.
-5. Difficulty distribution: ~20 easy, ~20 medium, ~10 hard.
-6. Categories:
-   - politics: elections, assassinations, legislation, coups, treaties, scandals, wars ending, revolutions
-   - culture: albums, films, books, social movements, sports moments, epidemics, viral internet moments, art
-   - tech: space milestones, inventions, web/internet milestones, AI breakthroughs, disasters, medical discoveries
-7. Each event text must be a single, clear, complete sentence of 10–20 words.
-8. Years must be historically accurate and verifiable.
-9. Hard events are obscure but historically significant.
-10. Easy events are well-known to most adults.
-11. Leave "id" as empty string "" — IDs will be assigned programmatically.
-12. Do NOT duplicate these events:${sampleExisting}
+3. Decade distribution (MANDATORY - the LLM often ignores this): 
+   - 1900-1919: at least 4 events (early 20th century)
+   - 1920-1939: at least 4 events (interwar period)  
+   - 1940-1959: at least 4 events (WWII/post-war)
+   - 1960-1979: at least 4 events (cold war)
+   - 1980-1999: at least 4 events (late 20th century)
+   - 2000-2019: at most 6 events (recent history)
+   - 2020-2026: at most 4 events (very recent)
+   This ensures true chronological spread across 126 years, not just recent decades.
+4. Category distribution: ~25% politics, ~25% culture, ~25% popculture, ~25% tech.
+5. Difficulty distribution: Equal split ~33% easy, ~33% medium, ~33% hard.
+6. Make events niche and obscure - the difficulty system will ensure gameplay variety.
+7. Categories:
+   - politics: obscure legislation, forgotten scandals, minor coups, regional treaties, failed revolutions, overlooked elections
+   - culture: one-hit wonders, viral internet moments, obscure albums, forgotten films, niche art movements, viral memes
+   - popculture: celebrity controversies, TikTok trends, viral challenges, internet drama, influencer milestones, meme origins, obscure fandom moments
+   - tech: failed products, obscure inventions, regional tech launches, forgotten websites, niche scientific discoveries
+8. Include global history from all continents with slight weight toward US history.
+9. Each event text must be a single, clear, complete sentence of 10–20 words describing ONLY what happened. Use active voice ("X releases Y", "Z invades W") not passive voice ("Y is released", "W is invaded"). ABSOLUTELY FORBIDDEN: Including the year in the text. This causes immediate rejection.
+
+   ❌ BAD (will be rejected): "Austrian politician Kurt Waldheim is accused of wartime atrocities in 1986."
+   ✅ GOOD: "Austrian politician Kurt Waldheim faces accusations of wartime atrocities."
+   
+   ❌ BAD (will be rejected): "French film 'Rashomon' is released in 1950."
+   ✅ GOOD: "French film 'Rashomon' debuts in theaters."
+   
+   ❌ BAD (will be rejected): "The first Apple iPhone is released in 2007."
+   ✅ GOOD: "Apple unveils the first iPhone at Macworld."
+   
+   ❌ BAD (will be rejected): "British band The Smiths release their debut single 'Hand in Glove' in 1983."
+   ✅ GOOD: "British band The Smiths releases debut single 'Hand in Glove'."
+   
+   The year field stores the date separately. NEVER write "in YYYY", "during the 90s", "last year", or any date in the text.
+10. Years must be historically accurate and verifiable.
+11. Hard events should require deep knowledge or research to date correctly.
+12. Easy events should be recognizable to most adults.
+13. Leave "id" as empty string "" — IDs will be assigned programmatically.
+14. Do NOT duplicate these events:${sampleExisting}
 
 Return ONLY the JSON array. No markdown. No explanation. No code fences. Just the raw JSON array starting with [ and ending with ].`;
 }
 
 // ─── Validation ──────────────────────────────────────────────────────────────
 
+function containsYear(text: string): boolean {
+  // Check for 4-digit years (1900-2026)
+  const yearPattern = /\b(19|20)\d{2}\b/;
+  return yearPattern.test(text);
+}
+
 function isValidEvent(e: unknown): e is Omit<HistoricalEvent, "id"> {
   if (typeof e !== "object" || e === null) return false;
   const ev = e as Record<string, unknown>;
 
   if (typeof ev.text !== "string" || ev.text.trim().length < 10) return false;
-  if (typeof ev.year !== "number" || ev.year < 1960 || ev.year > 2023) return false;
-  if (!["politics", "culture", "tech"].includes(ev.category as string)) return false;
+  if (typeof ev.year !== "number" || ev.year < 1900 || ev.year > 2026) return false;
+  if (!["politics", "culture", "popculture", "tech"].includes(ev.category as string)) return false;
   if (!["easy", "medium", "hard"].includes(ev.difficulty as string)) return false;
+  
+  // Reject events that include years in the text
+  if (containsYear(ev.text)) {
+    console.warn(`  ⚠  Rejecting event with year in text: "${ev.text}"`);
+    return false;
+  }
 
   return true;
 }

@@ -17,6 +17,7 @@ const CATEGORIES: { value: Category | "all"; label: string; className: string }[
   { value: "all", label: "All", className: "border-[#2a2a45] text-[#8888aa] hover:border-[#555570]" },
   { value: "politics", label: "Politics", className: "border-[rgba(74,111,165,0.4)] text-[#7ca3d4] hover:bg-[rgba(74,111,165,0.18)]" },
   { value: "culture", label: "Culture", className: "border-[rgba(123,94,167,0.4)] text-[#b08ee0] hover:bg-[rgba(123,94,167,0.18)]" },
+  { value: "popculture", label: "Pop Culture", className: "border-[rgba(217,70,239,0.4)] text-[#e879f9] hover:bg-[rgba(217,70,239,0.18)]" },
   { value: "tech", label: "Tech", className: "border-[rgba(74,140,111,0.4)] text-[#7cc4a0] hover:bg-[rgba(74,140,111,0.18)]" },
 ];
 

@@ -38,7 +38,7 @@ ChronoRank is a daily history trivia game. Players drag 5 historical events into
 ### Types (`src/types.ts`)
 
 ```typescript
-type Category = "politics" | "culture" | "tech";
+type Category = "politics" | "culture" | "popculture" | "tech";
 type Difficulty = "easy" | "medium" | "hard";
 
 interface HistoricalEvent {
@@ -81,10 +81,12 @@ Events in `src/data/events.json` follow this structure:
 
 When adding events manually, ensure:
 - `id` is unique, lowercase, hyphenated, includes the year
-- `year` is a 4-digit integer
-- `category` is one of: `politics`, `culture`, `tech`
-- `difficulty` is one of: `easy`, `medium`, `hard`
-- `text` is concise (under 80 chars), historically accurate, uses present tense
+- `year` is a 4-digit integer between 1900-2026
+- `category` is one of: `politics`, `culture`, `popculture`, `tech`
+- `difficulty` is one of: `easy`, `medium`, `hard` (pool should be ~33% each)
+- `text` is concise (under 80 chars), historically accurate, uses active voice
+- **CRITICAL:** Never include the year in the `text` field — years are stored separately
+- **CRITICAL:** Use active voice ("Apple unveils the iPhone", not "The iPhone is unveiled by Apple")
 
 ## Known constraints and pitfalls
 
@@ -92,6 +94,7 @@ When adding events manually, ensure:
 
 - **Single-list drag architecture in GameBoard.tsx.** A previous two-list design (unranked + ranked) caused a stale-closure bug where dragging the 5th card duplicated entries. The fix was reverting to a single `SortableContext` with `arrayMove`. Do not reintroduce a two-list pattern.
 - **Daily seed formula in `seed.ts`.** The PRNG seed is derived from `YYYYMMDD` as an integer (e.g., `20260313`). Changing this formula means different players see different puzzles for the same day.
+- **Unique years requirement.** `drawFive()` in seed.ts ensures all 5 events in a puzzle have distinct years. This guarantees puzzles are solvable by chronological ordering. If the pool has too many events with duplicate years across difficulty tiers, the draw may fail.
 - **Drag listeners on handle only.** In `EventCard.tsx`, `{...listeners}` is spread on the drag handle div, not the outer card. This prevents accidental drags on mobile when scrolling.
 - **Timezone: US Eastern for all puzzle boundaries.** All date/seed/key functions in `seed.ts` use `Intl.DateTimeFormat` with `timeZone: "America/New_York"`. This ensures puzzle rollover at midnight ET and consistent keys across timezones. Do not switch to UTC or local time.
 - **4-attempt system with review state.** Between attempts, cards show green/red coloring but years stay hidden (`showYear={false}` in the review state). Years are only revealed after all 4 attempts are spent or 5/5 is achieved. Do not reveal years between attempts — it allows cheating by memorization.
@@ -116,7 +119,7 @@ Tailwind v4 with custom theme tokens in `src/index.css`. Key values:
 
 - Background: `bg` (`#0a0a0f`), `surface` (`#12121e`), `card` (`#1a1a2e`)
 - Accent: `gold` (`#c8a84b`), `gold-dim` (`#9a7d35`)
-- Category: `politics` (blue), `culture` (purple), `tech` (green)
+- Category: `politics` (blue), `culture` (purple), `popculture` (pink), `tech` (green)
 - Fonts: `font-heading` (Playfair Display), `font-mono` (JetBrains Mono), `font-body` (Inter)
 
 Use the custom color names in Tailwind classes (e.g., `bg-card`, `text-gold`, `border-border`).
