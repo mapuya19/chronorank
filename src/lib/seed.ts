@@ -28,8 +28,9 @@ function seededShuffle<T>(arr: T[], rng: () => number): T[] {
 }
 
 /**
- * Core draw logic: 2 easy + 2 medium + 1 hard from a seeded shuffle.
+ * Core draw logic: 1 easy + 2 medium + 2 hard from a seeded shuffle.
  * Shared by daily and practice draws.
+ * Ensures all 5 events have unique years to guarantee solvable puzzles.
  */
 function drawFive(events: HistoricalEvent[], seed: number): HistoricalEvent[] {
   const rng = mulberry32(seed);
@@ -40,13 +41,21 @@ function drawFive(events: HistoricalEvent[], seed: number): HistoricalEvent[] {
     medium: [],
     hard: [],
   };
-  const targets: Record<Difficulty, number> = { easy: 2, medium: 2, hard: 1 };
+  const targets: Record<Difficulty, number> = { easy: 1, medium: 2, hard: 2 };
+  const drawnYears = new Set<number>();
 
   for (const event of shuffled) {
     const diff = event.difficulty;
-    if (drawn[diff].length < targets[diff]) {
-      drawn[diff].push(event);
-    }
+    
+    // Skip if year already used (ensures all 5 events have unique years)
+    if (drawnYears.has(event.year)) continue;
+    
+    // Skip if we've already filled this difficulty slot
+    if (drawn[diff].length >= targets[diff]) continue;
+    
+    drawn[diff].push(event);
+    drawnYears.add(event.year);
+    
     if (
       drawn.easy.length === targets.easy &&
       drawn.medium.length === targets.medium &&
@@ -61,7 +70,7 @@ function drawFive(events: HistoricalEvent[], seed: number): HistoricalEvent[] {
   if (five.length !== 5) {
     throw new Error(
       `drawFive: expected 5 events but got ${five.length}. ` +
-      `Check that the event pool has enough easy/medium/hard events.`
+      `Check that the event pool has enough easy/medium/hard events with unique years.`
     );
   }
 

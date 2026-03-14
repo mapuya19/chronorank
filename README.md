@@ -6,7 +6,7 @@ A daily history trivia game where you drag historical events into chronological 
 
 ## How it works
 
-Each day, 5 historical events are drawn from the pool (2 easy, 2 medium, 1 hard) using a deterministic PRNG seeded by the date. Players drag the shuffled cards into chronological order and submit. Correct positions light up green, wrong ones red.
+Each day, 5 historical events are drawn from the pool (1 easy, 2 medium, 2 hard) using a deterministic PRNG seeded by the date. Players drag the shuffled cards into chronological order and submit. Correct positions light up green, wrong ones red.
 
 You get **4 attempts** per puzzle. Between attempts you see which cards are right/wrong, but years stay hidden until you finish -- no memorizing answers. Share your score as an emoji grid when you're done.
 
@@ -61,9 +61,17 @@ npm run build
 npm run preview
 ```
 
+## Event requirements
+
+- **Year range:** 1900-2026 (126 years of modern history)
+- **Categories:** Politics (blue), Culture (purple), Pop Culture (pink), Tech (green)
+- **Voice:** Active voice only ("X releases Y", not "Y is released by X")
+- **No dates in text:** Event descriptions must not contain years (stored separately)
+- **Unique years:** Each daily puzzle guarantees 5 events with distinct years
+
 ## Expanding the event pool
 
-The game ships with 50 hand-written events. To generate more (up to 1,000) using the Groq API:
+The game ships with events generated via LLM. To generate more (up to 1,000) using the Groq API:
 
 ```bash
 # Copy the example env file and add your key
@@ -115,7 +123,7 @@ chronorank/
 
 - **Background:** `#0a0a0f` (near-black)
 - **Accent:** `#c8a84b` (gold)
-- **Category colors:** blue (politics), purple (culture), green (tech)
+- **Category colors:** blue (politics), purple (culture), pink (popculture), green (tech)
 - **Correct/wrong:** green/red with subtle background tints
 
 ## License

@@ -1,4 +1,4 @@
-export type Category = "politics" | "culture" | "tech";
+export type Category = "politics" | "culture" | "popculture" | "tech";
 export type Difficulty = "easy" | "medium" | "hard";
 
 export interface HistoricalEvent {
